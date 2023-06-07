@@ -1,7 +1,9 @@
 class Constructor
 {
-    objectMap = {};
-    styleMap = {};
+    objectMap = new Map();
+    styleMap = new Map();
+    nameProps = ['globalName', 'id', 'selector', 'class'];
+    blockProps = ["globalName", 'type', 'selector'];
 
     constructor(filePath)
     {
@@ -11,34 +13,87 @@ class Constructor
             {
                 resp.text().then((text) => 
                 {
-                    this.parseFile(JSON.parse(text));
+                    var json = JSON.parse(text);
+                    this.parseElements(json.elements);
+                    this.parseStyles(json.styles);
                 });
             });
         });
     }
 
-    parseFile = (parsedJSON) =>
+    parseElements = (elements) =>
     {
-        for (var i in parsedJSON.elements)
+        elements.forEach((object) => 
         {
-            var object = parsedJSON.elements[i];
-            var element = this.objectMap[object.globalName] = document.createElement(object.type);
-            for (var property in object)
+            console.log(object);
+
+            var selector = "el" + Math.round(Math.random() * 0x7ffffffe);
+            this.nameProps.forEach((name) =>
             {
-                // if this gets too big i will switch to switch statmenet
-                if (property == "globalName" || property == "type") // skip these properties cuz they are already used
+                if (Reflect.has(object, name))
+                    selector = name;
+            });
+            console.log(selector);
+
+            var ref = this.objectMap[selector] = document.createElement(object.type);
+            for (var propertyName in object)
+            {
+                if (this.blockProps.includes(propertyName))
                     continue;
+
+                var propertyValue = object[propertyName];
+                if (Reflect.has(ref, propertyName))
+                    Reflect.set(ref, propertyName, propertyValue);
                 else
+                    console.error(`Couldn't find ${propertyName}`);
+            }
+            document.body.appendChild(ref);
+        });
+    }
+
+    parseStyles = (styles) =>
+    {
+        styles.forEach((object) =>
+        {
+            console.log(object);
+
+            var method = "?";
+            var ref = undefined;
+
+            if (Reflect.has(object, 'globalName'))
+            {
+                ref = this.objectMap[object.globalName].style;
+                method = 'direct-mut'; // direct mutation
+            }
+            else
+            {
+                ref = this.styleMap[object.selector] = document.createElement('style');
+                method = 'style-el'; // style element
+            }
+
+            console.log(ref);
+            for (var propertyName in object)
+            {
+                if (this.blockProps.includes(propertyName))
+                    continue;
+
+                var propertyValue = object[propertyName];
+                switch(method)
                 {
-                    if(Reflect.has(element, property))
-                    {
-                        Reflect.set(element, property, object[property]);
-                    }
-                    else
-                        console.log(`${property} seems to be null`);
+                    case 'direct-mut':
+                        if (Reflect.has(ref, propertyName))
+                            Reflect.set(ref, propertyName, propertyValue);
+                        else
+                            console.error(`Couldn't find ${propertyName}`);
+                        break;
+                    case 'style-el':
+                        ref.innerHTML = `${object.selector} { ${propertyName}: ${propertyValue} }`;
+                        break;
                 }
             }
-            document.body.appendChild(element);
-        }
+
+            if (method == 'style-el')
+                document.head.appendChild(ref);
+        });
     }
 }

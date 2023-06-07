@@ -1,11 +1,25 @@
 {
+    "styles":
+    [
+        {
+            "selector": "#placeholder",
+            "color": "red"
+        }
+    ],
     "elements":
     [
         {
             "globalName": "placeholder",
-            "id": "",
+            "id": "placeholder",
             "type": "h1",
             "innerText": "sexo"
+        },
+        {
+            "globalName": "videosex",
+            "type": "video",
+            "src": "./sexo.mov",
+            "controls": "true",
+            "loop": "true"
         }
     ]
 }
